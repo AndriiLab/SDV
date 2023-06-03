@@ -12,7 +12,7 @@ using Microsoft.Win32;
 using SDV.App.Logging;
 using Serilog.Events;
 using SDV.DependenciesAnalyzer.Interfaces;
-using SDV.GraphGenerator;
+using SDV.GraphGenerator.Interfaces;
 
 namespace SDV.App
 {
@@ -77,7 +77,7 @@ namespace SDV.App
                 var request = new GraphBuilderRequest(_slnFilePaths)
                 {
                     Mode = (PackageFilterMode)Mode.SelectedValue,
-                    PackagePrefixes = PackagePrefixes.Text.Split(",").Select(t => t.Trim()).ToArray(),
+                    PackagePrefixes = PackagePrefixes.Text.Split(",").Select(t => t.Trim()).Where(t => !string.IsNullOrEmpty(t)).ToArray(),
                     IncludeDependentProjects = IncludeDependentProjects.IsChecked ?? false,
                     MergeProjects = MergeProjects.IsChecked ?? false
                 };

@@ -5,7 +5,7 @@ using SDV.App.Logging;
 using Serilog;
 using SDV.DependenciesAnalyzer;
 using SDV.DependenciesAnalyzer.Interfaces;
-using SDV.GraphGenerator;
+using SDV.GraphGenerator.Interfaces;
 using SDV.GraphGenerator.Services;
 
 namespace SDV.App

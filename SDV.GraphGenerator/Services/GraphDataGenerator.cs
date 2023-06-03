@@ -1,29 +1,12 @@
-﻿using System.Text.Json.Serialization;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using SDV.DependenciesAnalyzer.Models;
-using SDV.GraphGenerator.Utils;
+using SDV.GraphGenerator.Interfaces;
+using SDV.GraphGenerator.Services.Models;
 
 namespace SDV.GraphGenerator.Services;
 
-public interface IGraphDataGenerator
-{
-    void GenerateGraphDataFromTree(
-        Tree tree,
-        IDictionary<string, GraphDataGenerator.GraphProject> packages,
-        bool singleSolutionMode);
-}
-
 public class GraphDataGenerator : IGraphDataGenerator
 {
-    private const string FontDark = "#ddd";
-    private const string ColorDark = "#009911";
-    private const string FontWhite = "#ddd";
-    private const string ColorWhite = "#00cc22";
-    private const string ProjectType = "project";
-    private const string PackageType = "package";
-    private const string ArrowTo = "to";
-    private const string SmoothCubicBezier = "cubicBezier";
-
     private readonly ILogger<GraphDataGenerator> _log;
 
     public GraphDataGenerator(ILogger<GraphDataGenerator> log)
@@ -36,7 +19,6 @@ public class GraphDataGenerator : IGraphDataGenerator
         IDictionary<string, GraphProject> packages,
         bool singleSolutionMode)
     {
-        var isDarkMode = SystemHelper.IsDarkModeEnabled();
         foreach (var project in tree.Projects)
         {
             var projectName = singleSolutionMode ? tree.SolutionName : project.Name;
@@ -48,12 +30,7 @@ public class GraphDataGenerator : IGraphDataGenerator
                     {
                         Id = projectName,
                         Label = projectName,
-                        Font = new GraphFont
-                        {
-                            Color = isDarkMode ? FontDark : FontWhite
-                        },
-                        Type = ProjectType,
-                        Color = GetItemColorForType(ProjectType)
+                        Type = DependencyType.Project.ToString()
                     }
                 };
                 packages[projectName] = graphProject;
@@ -68,11 +45,9 @@ public class GraphDataGenerator : IGraphDataGenerator
         IDictionary<string, GraphProject> packages,
         bool singleSolutionMode)
     {
-        var isDarkMode = SystemHelper.IsDarkModeEnabled();
-
         foreach (var dependency in projectDependencies)
         {
-            if (singleSolutionMode && dependency.Type == ProjectType)
+            if (singleSolutionMode && dependency.Type == DependencyType.Project)
             {
                 continue;
             }
@@ -85,12 +60,7 @@ public class GraphDataGenerator : IGraphDataGenerator
                     {
                         Id = dependency.Id,
                         Label = dependency.Id,
-                        Font = new GraphFont
-                        {
-                            Color = isDarkMode ? FontDark : FontWhite
-                        },
-                        Type = dependency.Type,
-                        Color = GetItemColorForType(dependency.Type)
+                        Type = dependency.Type.ToString(),
                     }
                 };
                 packages[dependency.Id] = graphProject;
@@ -102,74 +72,21 @@ public class GraphDataGenerator : IGraphDataGenerator
                 {
                     From = parentName,
                     To = dependency.Id,
-                    Arrows = ArrowTo,
                     Label = dependency.Version,
-                    Smooth = new Smooth { Type = SmoothCubicBezier }
                 };
                 graphProject.Edges[parentName] = edge;
             }
             else if (!edge.Label.Contains(dependency.Version))
             {
                 edge.Label += $" | {dependency.Version}";
+                edge.HasMultipleVersions = true;
+                graphProject.Package.HasMultipleVersions = true;
                 _log.LogWarning("Multiple versions detected for {From} -> {To}: {Versions}",
                     parentName, dependency.Id, edge.Label);
             }
 
             GenerateDependencies(dependency.Id, dependency.Dependencies, packages, singleSolutionMode);
         }
-    }
-
-    private static string GetItemColorForType(string projectType)
-    {
-        return projectType switch
-        {
-            ProjectType => SystemHelper.IsDarkModeEnabled() ? ColorDark : ColorWhite,
-            PackageType => "#22aaee",
-            _ => "#22aaee"
-        };
-    }
-
-    public class GraphProject
-    {
-        public GraphPackage Package { get; init; }
-        public Dictionary<string, GraphEdge> Edges { get; set; } = new();
-    }
-
-    public class GraphPackage
-    {
-        [JsonPropertyName("id")] public string Id { get; set; }
-
-        [JsonPropertyName("label")] public string Label { get; set; }
-
-        [JsonPropertyName("font")] public GraphFont Font { get; set; }
-
-        [JsonPropertyName("type")] public string Type { get; set; }
-
-        [JsonPropertyName("color")] public string Color { get; set; }
-    }
-
-    public class GraphEdge
-    {
-        [JsonPropertyName("from")] public string From { get; set; }
-
-        [JsonPropertyName("to")] public string To { get; set; }
-
-        [JsonPropertyName("arrows")] public string Arrows { get; set; }
-
-        [JsonPropertyName("smooth")] public Smooth Smooth { get; set; }
-
-        [JsonPropertyName("label")] public string Label { get; set; }
-    }
-
-    public class Smooth
-    {
-        [JsonPropertyName("type")] public string Type { get; set; }
-    }
-
-    public class GraphFont
-    {
-        [JsonPropertyName("color")] public string Color { get; set; }
-
     }
 }
 

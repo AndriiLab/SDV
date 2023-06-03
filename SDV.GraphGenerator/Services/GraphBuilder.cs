@@ -1,29 +1,10 @@
 ﻿using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using SDV.DependenciesAnalyzer.Interfaces;
-using SDV.GraphGenerator.Services;
+using SDV.GraphGenerator.Interfaces;
+using SDV.GraphGenerator.Services.Models;
 
-namespace SDV.GraphGenerator;
-
-public interface IGraphBuilder
-{
-    string BuildGraphAndGetFilePath(GraphBuilderRequest request);
-}
-
-public class GraphBuilderRequest
-{
-    public IEnumerable<string> SlnFilePaths { get; }
-    public string[] PackagePrefixes { get; init; }
-    public PackageFilterMode Mode { get; init; }
-    public bool IncludeDependentProjects { get; init; }
-    public bool MergeProjects { get; init; }
-
-    public GraphBuilderRequest(IEnumerable<string> slnFilePaths)
-    {
-        SlnFilePaths = slnFilePaths;
-        PackagePrefixes = Array.Empty<string>();
-    }
-}
+namespace SDV.GraphGenerator.Services;
 
 public class GraphBuilder : IGraphBuilder
 {
@@ -42,7 +23,7 @@ public class GraphBuilder : IGraphBuilder
 
     public string BuildGraphAndGetFilePath(GraphBuilderRequest request)
     {
-        var packages = new Dictionary<string, GraphDataGenerator.GraphProject>();
+        var packages = new Dictionary<string, GraphProject>();
         var names = new List<string>();
 
         foreach (var slnFilePath in request.SlnFilePaths)
@@ -78,8 +59,8 @@ public class GraphBuilder : IGraphBuilder
         return WriteHtmlFile(names, nodes, edges);
     }
 
-    private string WriteHtmlFile(IReadOnlyCollection<string> names, List<GraphDataGenerator.GraphPackage> nodes,
-        List<GraphDataGenerator.GraphEdge> edges)
+    private string WriteHtmlFile(IReadOnlyCollection<string> names, List<GraphPackage> nodes,
+        List<GraphEdge> edges)
     {
         const string titlePlaceholder = "Title";
         const string nodesPlaceholder = "Nodes";
@@ -135,7 +116,7 @@ public class GraphBuilder : IGraphBuilder
         }
     }
 
-    private string? DetectPlaceholder(ReadOnlySpan<char> line)
+    private static string? DetectPlaceholder(ReadOnlySpan<char> line)
     {
         const char startPlaceholder = '{';
         const char endPlaceholder = '}';

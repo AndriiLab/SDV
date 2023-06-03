@@ -33,9 +33,34 @@
     var edges =
         {{Edges}}
     ;
+    
+    var isDarkScheme = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
 
     // how to configure or customise?
     // see: https://visjs.github.io/vis-network/docs/network/#modules
+    for (var i = 0; i < nodes.length; i++) {
+        var node = nodes[i];
+        node.font = { 
+            color: isDarkScheme
+                ? "#ddd"
+                : "#000"
+        };
+        node.color = node.type !== "Project" 
+            ? "#2ae"
+            : isDarkScheme 
+                ? "#091"
+                : "#0c2";
+    }
+
+    for (let j = 0; j < edges.length; j++) {
+        var edge = edges[j];
+        edge.smooth = { type: "cubicBezier" }
+        edge.arrows = "to";
+        edge.color = edge.multipleVersions 
+            ? "#c00"
+            : "#ccc"
+    }
+
     var container = document.getElementById("dependenceGraph");
     var data = {
         nodes: nodes,
