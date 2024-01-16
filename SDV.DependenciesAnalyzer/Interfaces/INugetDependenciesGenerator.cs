@@ -5,6 +5,12 @@ namespace SDV.DependenciesAnalyzer.Interfaces;
 public interface INugetDependenciesGenerator
 {
     Tree Generate(string slnFilePath);
+
+    /// <summary>
+    /// Generates a tree based on the provided configuration.
+    /// </summary>
+    /// <param name="configuration">The configuration used to generate the tree.</param>
+    /// <returns>The generated tree.</returns>
     Tree Generate(TreeGeneratorConfiguration configuration);
 }
 

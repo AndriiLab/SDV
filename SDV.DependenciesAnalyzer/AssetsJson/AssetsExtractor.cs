@@ -35,13 +35,11 @@ public class AssetsExtractorBuilder : IExtractorBuilder
 
     private class AssetsExtractor : IExtractor
     {
-        private readonly ILogger _log;
         private readonly ProjectAssetsJsonModel _assets;
         private readonly AssetsUtils _utils;
         
         private AssetsExtractor(ILogger log, ProjectAssetsJsonModel assets)
         {
-            _log = log;
             _assets = assets;
             _utils = new AssetsUtils(log);
         }

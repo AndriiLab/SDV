@@ -12,7 +12,7 @@ public class AssetsUtils
     private readonly ILogger _log;
 
     private const string AbsentNupkgWarnMsg = 
-        @"Skipping adding this dependency to the dependency tree. This might be because the package already exists in a different NuGet cache, possibly the SDK's NuGetFallbackFolder cache. Removing the package from this cache may resolve the issue.";
+        "Skipping adding this dependency to the dependency tree. This might be because the package already exists in a different NuGet cache, possibly the SDK's NuGetFallbackFolder cache. Removing the package from this cache may resolve the issue.";
 
     public AssetsUtils(ILogger log)
     {
@@ -24,7 +24,7 @@ public class AssetsUtils
         var frameworks = assets.Project.Frameworks;
         if (frameworks is null)
         {
-            return new List<string>(0);
+            return [];
         }
 
         var directDependencies = frameworks

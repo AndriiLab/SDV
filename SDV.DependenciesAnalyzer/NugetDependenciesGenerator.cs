@@ -5,7 +5,6 @@ using SDV.DependenciesAnalyzer.Models;
 using SDV.DependenciesAnalyzer.Structure;
 
 namespace SDV.DependenciesAnalyzer;
-
 public class NugetDependenciesGenerator : INugetDependenciesGenerator
 {
     private readonly ILogger _log;
@@ -31,9 +30,14 @@ public class NugetDependenciesGenerator : INugetDependenciesGenerator
         var solution = _solutionBuilder.CreateSolutionFile(configuration);
         
         _log.LogInformation("Found {Number} projects in solution. Processing dependencies", solution.Projects.Count);
+       
+        return BuildDependenciesTree(solution, configuration);
+    }
 
+    private Tree BuildDependenciesTree(SolutionBuilder.Solution solution, TreeGeneratorConfiguration configuration)
+    {
         var nugetDepsTree = new Tree(Path.GetFileNameWithoutExtension(configuration.SlnFilePath));
-        // CreateSolutionFile the tree for each project.
+        // Build the tree for each project.
         foreach (var project in solution.Projects)
         {
             var depsTree = _projectBuilder.CreateDependencyTree(project, configuration);

@@ -32,6 +32,38 @@ public class SolutionBuilder
         
         return new Solution(projects);
     }
+    
+    private IEnumerable<ProjectBuilder.Project> LoadProjects()
+    {
+        var projectDeclarations = ParseSlnFile(_configuration.SlnFilePath);
+        return projectDeclarations.Count > 0 
+            ? LoadProjectsFromSolutionFile(projectDeclarations) 
+            : LoadSingleProjectFromDir();
+    }
+
+    private IEnumerable<ProjectBuilder.Project> LoadProjectsFromSolutionFile(IEnumerable<string> slnProjects)
+    {
+        return slnProjects.SelectMany(ParseAndLoadProject);
+    }
+
+    private IEnumerable<ProjectBuilder.Project> ParseAndLoadProject(string project)
+    {
+        try
+        {
+            var parsed = ParseProject(project, CommonUtils.GetProjectDirectoryName(_configuration.SlnFilePath));
+            if (!CanProjectBeProcessed(parsed.ProjectName, parsed.CsprojPath))
+            {
+                return Enumerable.Empty<ProjectBuilder.Project>();
+            }
+            var pb = LoadProject(parsed.ProjectName, parsed.CsprojPath);
+            return pb != null ? new[] { pb } : Enumerable.Empty<ProjectBuilder.Project>(); 
+        }
+        catch (Exception ex) 
+        {
+            _logger.LogError(ex, "Failed parsing and loading project '{ProjectName}' from solution '{SolutionName}': {Error}", project, _configuration.SlnFilePath, ex.Message);
+            return Enumerable.Empty<ProjectBuilder.Project>();
+        }
+    }
 
     private List<string> GetDependenciesSources()
     {
@@ -55,46 +87,6 @@ public class SolutionBuilder
         curDependenciesSources.AddRange(curDependenciesSources);
         
         return curDependenciesSources;
-    }
-
-    private IEnumerable<ProjectBuilder.Project> LoadProjects()
-    {
-        var projectsDeclarations = ParseSlnFile(_configuration.SlnFilePath);
-        if (projectsDeclarations.Count > 0)
-        {
-            return LoadProjectsFromSolutionFile(projectsDeclarations);
-        }
-        return LoadSingleProjectFromDir();
-    }
-
-    private IEnumerable<ProjectBuilder.Project> LoadProjectsFromSolutionFile(List<string> slnProjects)
-    {
-        foreach (var project in slnProjects)
-        {
-            ProjectBuilder.Project projectBuilder;
-            try
-            {
-                var parsed = ParseProject(project, CommonUtils.GetProjectDirectoryName(_configuration.SlnFilePath));
-                if (!CanProjectBeProcessed(parsed.ProjectName, parsed.CsprojPath))
-                {
-                    continue;
-                }
-
-                var pb = LoadProject(parsed.ProjectName, parsed.CsprojPath);
-                if (pb is null)
-                {
-                    continue;
-                }
-                projectBuilder = pb;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed parsing and loading project '{ProjectName}' from solution '{SolutionName}': {Error}", project, _configuration.SlnFilePath, ex.Message);
-                continue;
-            }
-
-            yield return projectBuilder;
-        }
     }
 
     private bool CanProjectBeProcessed(string name, string path)

@@ -1,7 +1,7 @@
 # SDV - Solution Dependencies Visualiser
 
 ![MIT License](https://img.shields.io/github/license/AndriiLab/SDV)
-![.NET Core 7.0](https://img.shields.io/badge/.net%20core-7.0-blue)
+![.NET Core 8.0](https://img.shields.io/badge/.net%20core-8.0-blue)
 ![Last Commit](https://img.shields.io/github/last-commit/AndriiLab/SDV)
 ![Last release](https://img.shields.io/github/release-date/AndriiLab/SDV)
 
