@@ -36,7 +36,7 @@ But you can also check functional output demo [here](https://andriilab.github.io
 ## Prerequisites
 
 - Windows platform (only supported for now by GUI)
-- [.NET 7](https://dotnet.microsoft.com/en-us/download/dotnet/7.0)
+- [.NET 8](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
 
 ## Installation
 
