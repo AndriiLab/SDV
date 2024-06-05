@@ -28,10 +28,9 @@ public class GraphBuilder : IGraphBuilder
 
         foreach (var slnFilePath in request.SlnFilePaths)
         {
-            var config = new TreeGeneratorConfiguration(slnFilePath)
+            var config = new TreeGeneratorConfiguration(slnFilePath, request.PackageFilters)
             {
                 Mode = request.Mode,
-                PackagePrefixes = request.PackagePrefixes,
                 IncludeDependentProjects = request is { MergeProjects: false, IncludeDependentProjects: true }
             };
 

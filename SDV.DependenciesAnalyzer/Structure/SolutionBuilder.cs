@@ -19,7 +19,7 @@ public class SolutionBuilder
     {
         _logger = logger;
         _projectBuilder = projectBuilder;
-        _configuration = new TreeGeneratorConfiguration(string.Empty);
+        _configuration = new TreeGeneratorConfiguration(string.Empty, []);
         _dependenciesSources = new List<string>();
     }
 
@@ -97,19 +97,7 @@ public class SolutionBuilder
             return false;
         }
 
-        if ( _configuration.Mode == PackageFilterMode.None || _configuration.PackagePrefixes.Length == 0)
-        {
-            return true;
-        }
-
-        var isMatched = _configuration.PackagePrefixes.Any(name.StartsWith);
-        var shouldBeProcessed = _configuration.Mode == PackageFilterMode.Include ? isMatched : !isMatched;
-        if (!shouldBeProcessed)
-        {
-            _logger.LogDebug("Processing of project {ProjectName} and its dependencies is skipped due to configuration", name);
-        }
-
-        return shouldBeProcessed;
+        return _configuration.IsPackageEnabled(name);
     }
 
     private IEnumerable<ProjectBuilder.Project> LoadSingleProjectFromDir()

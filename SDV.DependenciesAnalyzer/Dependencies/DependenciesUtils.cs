@@ -12,7 +12,7 @@ public class DependenciesUtils
     public DependenciesUtils(ILogger log)
     {
         _log = log;
-        _configuration = new TreeGeneratorConfiguration(string.Empty);
+        _configuration = new TreeGeneratorConfiguration(string.Empty, []);
     }
     
     public DependencyTree[] CreateDependencyTree(IExtractor extractor, TreeGeneratorConfiguration configuration)
@@ -74,22 +74,7 @@ public class DependenciesUtils
             }
         }
     }
-    
-        
-    private bool CanBeProcessed(string name)
-    {
-        if ( _configuration.Mode == PackageFilterMode.None || _configuration.PackagePrefixes.Length == 0)
-        {
-            return true;
-        }
 
-        var isMatched = _configuration.PackagePrefixes.Any(name.StartsWith);
-        var shouldBeProcessed = _configuration.Mode == PackageFilterMode.Include ? isMatched : !isMatched;
-        if (!shouldBeProcessed)
-        {
-            _log.LogDebug("Processing of package {Name} and its dependencies is skipped due to configuration",  name);
-        }
 
-        return shouldBeProcessed;
-    }
+    private bool CanBeProcessed(string name) => _configuration.IsPackageEnabled(name);
 }

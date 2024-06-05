@@ -20,7 +20,7 @@ public class NugetDependenciesGenerator : INugetDependenciesGenerator
     
     public Tree Generate(string slnFilePath)
     {
-        return Generate(new TreeGeneratorConfiguration(slnFilePath));
+        return Generate(new TreeGeneratorConfiguration(slnFilePath, []));
     }
 
     public Tree Generate(TreeGeneratorConfiguration configuration)

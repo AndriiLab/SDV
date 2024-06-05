@@ -36,7 +36,7 @@ namespace SDV.App
             {
                 Filter = "solution files (*.sln)|*.sln"
             };
-            PackagePrefixes.Text = "Microsoft., System.";
+            PackagePrefixes.Text = "Microsoft.*, System.*";
             IncludeDependentProjects.IsChecked = true;
             ClearSelectionButton.IsEnabled = false;
             SetupModeComboBox();
@@ -77,7 +77,7 @@ namespace SDV.App
                 var request = new GraphBuilderRequest(_slnFilePaths)
                 {
                     Mode = (PackageFilterMode)Mode.SelectedValue,
-                    PackagePrefixes = PackagePrefixes.Text.Split(",").Select(t => t.Trim()).Where(t => !string.IsNullOrEmpty(t)).ToArray(),
+                    PackageFilters = PackagePrefixes.Text.Split(",").Select(t => t.Trim()).Where(t => !string.IsNullOrEmpty(t)).ToArray(),
                     IncludeDependentProjects = IncludeDependentProjects.IsChecked ?? false,
                     MergeProjects = MergeProjects.IsChecked ?? false
                 };

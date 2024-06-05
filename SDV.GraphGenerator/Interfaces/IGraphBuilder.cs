@@ -10,7 +10,7 @@ public interface IGraphBuilder
 public class GraphBuilderRequest
 {
     public IEnumerable<string> SlnFilePaths { get; }
-    public string[] PackagePrefixes { get; init; }
+    public string[] PackageFilters { get; init; }
     public PackageFilterMode Mode { get; init; }
     public bool IncludeDependentProjects { get; init; }
     public bool MergeProjects { get; init; }
@@ -18,6 +18,6 @@ public class GraphBuilderRequest
     public GraphBuilderRequest(IEnumerable<string> slnFilePaths)
     {
         SlnFilePaths = slnFilePaths;
-        PackagePrefixes = Array.Empty<string>();
+        PackageFilters = Array.Empty<string>();
     }
 }
