@@ -12,7 +12,7 @@ public class DependenciesUtils
     public DependenciesUtils(ILogger log)
     {
         _log = log;
-        _configuration = new TreeGeneratorConfiguration(string.Empty, []);
+        _configuration = new TreeGeneratorConfiguration(string.Empty, [], []);
     }
     
     public DependencyTree[] CreateDependencyTree(IExtractor extractor, TreeGeneratorConfiguration configuration)
@@ -20,18 +20,13 @@ public class DependenciesUtils
         _configuration = configuration;
         var rootTree = _configuration.IncludeDependentProjects
             ? extractor.DependentProjects().Select(p => DependencyTree.AsProject(p.Id, p.Version)).ToList()
-            : new List<DependencyTree>();
+            : [];
         var rootDependencies = extractor.DirectDependencies();
         var allDependencies = extractor.AllDependencies();
         var childrenMap = extractor.ChildrenMap();
 
-        foreach (var rootId in rootDependencies)
+        foreach (var rootId in rootDependencies.Where(_configuration.IsPackageEnabled))
         {
-            if (!CanBeProcessed(rootId))
-            {
-                continue;
-            }
-            
             if (allDependencies.TryGetValue(rootId, out var dependency))
             {
                 var childrenDependencies = FindChildrenDependencies(rootId, allDependencies, childrenMap).ToList();
@@ -55,14 +50,9 @@ public class DependenciesUtils
         {
             yield break;
         }
-        
-        foreach (var childId in childArray)
+
+        foreach (var childId in childArray.Where(_configuration.IsPackageEnabled))
         {
-            if (!CanBeProcessed(childId))
-            {
-                continue;
-            }
-            
             if (allDependencies.TryGetValue(childId, out var dependency))
             {
                 var childrenDependencies = FindChildrenDependencies(childId, allDependencies, childrenMap).ToList();
@@ -74,7 +64,4 @@ public class DependenciesUtils
             }
         }
     }
-
-
-    private bool CanBeProcessed(string name) => _configuration.IsPackageEnabled(name);
 }

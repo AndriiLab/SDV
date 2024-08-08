@@ -11,7 +11,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Win32;
 using SDV.App.Logging;
 using Serilog.Events;
-using SDV.DependenciesAnalyzer.Interfaces;
 using SDV.GraphGenerator.Interfaces;
 
 namespace SDV.App
@@ -36,10 +35,10 @@ namespace SDV.App
             {
                 Filter = "solution files (*.sln)|*.sln"
             };
-            PackagePrefixes.Text = "Microsoft.*, System.*";
+            PackageFiltersExclude.Text = "Microsoft.*, System.*";
             IncludeDependentProjects.IsChecked = true;
             ClearSelectionButton.IsEnabled = false;
-            SetupModeComboBox();
+            Labels.Text = "IsNuget=\ud83d\udce6";
             logSink.OnLogEmitted = OnLogEmitted;
         }
 
@@ -69,19 +68,25 @@ namespace SDV.App
                 _logger.LogError("Please, select sln file to proceed");
                 return;
             }
-            
+
             ToggleControlsAs(false);
 
             try
             {
                 var request = new GraphBuilderRequest(_slnFilePaths)
                 {
-                    Mode = (PackageFilterMode)Mode.SelectedValue,
-                    PackageFilters = PackagePrefixes.Text.Split(",").Select(t => t.Trim()).Where(t => !string.IsNullOrEmpty(t)).ToArray(),
+                    FiltersInclude = GetCommaSeparatedValues(PackageFiltersInclude.Text).ToArray(),
+                    FiltersExclude = GetCommaSeparatedValues(PackageFiltersExclude.Text).ToArray(),
+                    Labels = GetCommaSeparatedValues(Labels.Text).Select(s => s.Split('=')).Where(a => a.Length == 2)
+                        .GroupBy(s => s[0].Trim())
+                        .ToDictionary(
+                            g => g.Key,
+                            g => g.SelectMany(v => v).Select(s => s.Trim())
+                                .Where(s => !string.IsNullOrEmpty(s) && s != g.Key).ToArray()),
                     IncludeDependentProjects = IncludeDependentProjects.IsChecked ?? false,
                     MergeProjects = MergeProjects.IsChecked ?? false
                 };
-                
+
                 var path = await BuildGraphAndGetFilePathAsync(request);
 
                 OpenUrl(path);
@@ -97,12 +102,17 @@ namespace SDV.App
             }
         }
 
-        private Task<string> BuildGraphAndGetFilePathAsync(GraphBuilderRequest graphBuilderRequest) => 
+        private static IEnumerable<string> GetCommaSeparatedValues(string str)
+        {
+            return str.Split(",").Select(t => t.Trim()).Where(t => !string.IsNullOrEmpty(t));
+        }
+
+        private Task<string> BuildGraphAndGetFilePathAsync(GraphBuilderRequest graphBuilderRequest) =>
             Task.Run(() => _builder.BuildGraphAndGetFilePath(graphBuilderRequest));
 
         private void btnClearSelection_Click(object sender, RoutedEventArgs e)
         {
-            _slnFilePaths = new HashSet<string>();
+            _slnFilePaths = [];
             Log.Text = string.Empty;
             _logger.LogInformation("Selection cleared");
             ClearSelectionButton.IsEnabled = false;
@@ -136,27 +146,17 @@ namespace SDV.App
             }
         }
 
-        private void SetupModeComboBox()
-        {
-            var item = Tuple.Create("Disabled", PackageFilterMode.None);
-            Mode.DisplayMemberPath = nameof(item.Item1);
-            Mode.SelectedValuePath = nameof(item.Item2);
-            Mode.SelectedValue = PackageFilterMode.Exclude;
-            Mode.Items.Add(item);
-            Mode.Items.Add(Tuple.Create("Include listed packages", PackageFilterMode.Include));
-            Mode.Items.Add(Tuple.Create("Exclude listed packages", PackageFilterMode.Exclude));
-        }
-
         private void ToggleControlsAs(bool state)
         {
             SlnFileSelectorButton.IsEnabled = state;
-            Mode.IsEnabled = state;
-            PackagePrefixes.IsEnabled = state;
+            PackageFiltersInclude.IsEnabled = state;
+            PackageFiltersExclude.IsEnabled = state;
+            Labels.IsEnabled = state;
             IncludeDependentProjects.IsEnabled = state;
             MergeProjects.IsEnabled = state;
             BuildGraphButton.IsEnabled = state;
         }
-        
+
         private void OnLogEmitted(LogEventLevel level, string log)
         {
             Log.Dispatcher.Invoke(DispatcherPriority.Background, () =>
@@ -167,7 +167,7 @@ namespace SDV.App
             });
         }
 
-        private static Brush GetBrushForLevel(LogEventLevel level)
+        private static SolidColorBrush GetBrushForLevel(LogEventLevel level)
         {
             return level switch
             {

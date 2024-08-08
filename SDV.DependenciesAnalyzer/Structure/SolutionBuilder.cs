@@ -19,7 +19,7 @@ public class SolutionBuilder
     {
         _logger = logger;
         _projectBuilder = projectBuilder;
-        _configuration = new TreeGeneratorConfiguration(string.Empty, []);
+        _configuration = new TreeGeneratorConfiguration(string.Empty, [], []);
         _dependenciesSources = new List<string>();
     }
 
@@ -53,7 +53,7 @@ public class SolutionBuilder
             var parsed = ParseProject(project, CommonUtils.GetProjectDirectoryName(_configuration.SlnFilePath));
             if (!CanProjectBeProcessed(parsed.ProjectName, parsed.CsprojPath))
             {
-                return Enumerable.Empty<ProjectBuilder.Project>();
+                return [];
             }
             var pb = LoadProject(parsed.ProjectName, parsed.CsprojPath);
             return pb != null ? new[] { pb } : Enumerable.Empty<ProjectBuilder.Project>(); 
@@ -61,7 +61,7 @@ public class SolutionBuilder
         catch (Exception ex) 
         {
             _logger.LogError(ex, "Failed parsing and loading project '{ProjectName}' from solution '{SolutionName}': {Error}", project, _configuration.SlnFilePath, ex.Message);
-            return Enumerable.Empty<ProjectBuilder.Project>();
+            return [];
         }
     }
 

@@ -1,4 +1,5 @@
 ﻿using System.Text.Json.Serialization;
+using SDV.DependenciesAnalyzer.Models;
 
 namespace SDV.GraphGenerator.Services.Models;
 
@@ -12,11 +13,13 @@ public class GraphPackage
 {
     [JsonPropertyName("id")] public string Id { get; init; }
 
-    [JsonPropertyName("label")] public string Label { get; init; }
+    [JsonPropertyName("label")] public string Label { get; set; }
 
-    [JsonPropertyName("type")] public string Type { get; init; }
+    [JsonPropertyName("type")] public string Type => TypeInternal.HasFlag(DependencyType.Project) ? DependencyType.Project.ToString() : DependencyType.Package.ToString();
         
     [JsonPropertyName("multipleVersions")] public bool HasMultipleVersions { get; set; }
+    
+    [JsonIgnore] public DependencyType TypeInternal { get; set; }
 
 }
 

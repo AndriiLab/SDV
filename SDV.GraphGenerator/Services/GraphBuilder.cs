@@ -25,14 +25,17 @@ public class GraphBuilder : IGraphBuilder
     {
         var packages = new Dictionary<string, GraphProject>();
         var names = new List<string>();
+        
+        var config = new TreeGeneratorConfiguration(string.Empty, request.FiltersInclude, request.FiltersExclude)
+        {
+            IncludeDependentProjects = request is { MergeProjects: false, IncludeDependentProjects: true },
+        };
 
+        _graphDataGenerator.SetLabels(request.Labels);
+        
         foreach (var slnFilePath in request.SlnFilePaths)
         {
-            var config = new TreeGeneratorConfiguration(slnFilePath, request.PackageFilters)
-            {
-                Mode = request.Mode,
-                IncludeDependentProjects = request is { MergeProjects: false, IncludeDependentProjects: true }
-            };
+            config.SlnFilePath = slnFilePath;
 
             _logger.LogInformation("Processing solution {SlnPath}", slnFilePath);
 

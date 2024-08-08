@@ -19,7 +19,7 @@ public class DependencyTree : IDependencyDetails
 
     public static DependencyTree AsProject(string id, string version)
     {
-        return new DependencyTree(id, version, new List<DependencyTree>(0), DependencyType.Project);
+        return new DependencyTree(id, version, [], DependencyType.Project);
     }
 
     public static DependencyTree AsPackage(string id, string version, List<DependencyTree> dependencies)
@@ -28,6 +28,7 @@ public class DependencyTree : IDependencyDetails
     }
 }
 
+[Flags]
 public enum DependencyType
 {
     Project = 1,

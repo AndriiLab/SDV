@@ -5,8 +5,9 @@ namespace SDV.GraphGenerator.Interfaces;
 
 public interface IGraphDataGenerator
 {
-    void GenerateGraphDataFromTree(
-        Tree tree,
+    void GenerateGraphDataFromTree(Tree tree,
         IDictionary<string, GraphProject> packages,
         bool singleSolutionMode);
+
+    void SetLabels(IReadOnlyDictionary<string, string[]> requestLabels);
 }

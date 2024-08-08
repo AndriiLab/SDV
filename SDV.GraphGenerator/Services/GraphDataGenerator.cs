@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using SDV.DependenciesAnalyzer.Helpers;
 using SDV.DependenciesAnalyzer.Models;
 using SDV.GraphGenerator.Interfaces;
 using SDV.GraphGenerator.Services.Models;
@@ -8,14 +9,16 @@ namespace SDV.GraphGenerator.Services;
 public class GraphDataGenerator : IGraphDataGenerator
 {
     private readonly ILogger<GraphDataGenerator> _log;
+    
+    private (Func<GraphProject, bool> Function, string[] Labels)[] _labels;
 
     public GraphDataGenerator(ILogger<GraphDataGenerator> log)
     {
         _log = log;
+        _labels = [];
     }
 
-    public void GenerateGraphDataFromTree(
-        Tree tree,
+    public void GenerateGraphDataFromTree(Tree tree,
         IDictionary<string, GraphProject> packages,
         bool singleSolutionMode)
     {
@@ -30,13 +33,22 @@ public class GraphDataGenerator : IGraphDataGenerator
                     {
                         Id = projectName,
                         Label = projectName,
-                        Type = DependencyType.Project.ToString()
+                        TypeInternal = DependencyType.Project
                     }
                 };
                 packages[projectName] = graphProject;
             }
 
+            graphProject.Package.TypeInternal &= DependencyType.Project;
+
             GenerateDependencies(projectName, project.Dependencies, packages, singleSolutionMode);
+        }
+        
+        foreach (var node in packages.Values)
+        {
+            var labelsToApply = _labels.Where(l => l.Function(node)).SelectMany(l => l.Labels).ToArray();
+            if (labelsToApply.Length != 0)
+                node.Package.Label += string.Join("", labelsToApply);
         }
     }
 
@@ -60,11 +72,14 @@ public class GraphDataGenerator : IGraphDataGenerator
                     {
                         Id = dependency.Id,
                         Label = dependency.Id,
-                        Type = dependency.Type.ToString(),
+                        TypeInternal = dependency.Type
                     }
                 };
                 packages[dependency.Id] = graphProject;
             }
+            
+            graphProject.Package.TypeInternal &= dependency.Type;
+
 
             if (!graphProject.Edges.TryGetValue(parentName, out var edge))
             {
@@ -87,6 +102,35 @@ public class GraphDataGenerator : IGraphDataGenerator
 
             GenerateDependencies(dependency.Id, dependency.Dependencies, packages, singleSolutionMode);
         }
+    }
+
+    public void SetLabels(IReadOnlyDictionary<string, string[]> labels)
+    {
+        _labels = labels.Select(kv => (BuildFilter(kv.Key), kv.Value))
+            .Where(f => f.Item1 != null && f.Item2.Any(s => !string.IsNullOrWhiteSpace(s)))
+            .Select(f => (f.Item1!, f.Item2.Where(s => !string.IsNullOrWhiteSpace(s)).ToArray()))
+            .ToArray();
+    }
+
+    private const string IsProjectKey = "IsProject";
+    private const string IsNugetKey = "IsNuget";
+    private static Func<GraphProject, bool>? BuildFilter(string filter)
+    {
+        if (string.IsNullOrWhiteSpace(filter))
+            return null;
+
+        filter = filter.Trim();
+
+        if (string.Equals(filter, IsProjectKey, StringComparison.InvariantCultureIgnoreCase))
+            return x => x.Package.TypeInternal.HasFlag(DependencyType.Project);
+        
+        if (string.Equals(filter, IsNugetKey, StringComparison.InvariantCultureIgnoreCase))
+            return x => x.Package.TypeInternal.HasFlag(DependencyType.Package);
+
+        var func = FilterHelper.BuildFilter(filter);
+        return func != null 
+            ? new Func<GraphProject, bool>(x => func(x.Package.Label))
+            : null;
     }
 }
 

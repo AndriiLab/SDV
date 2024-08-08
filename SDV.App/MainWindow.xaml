@@ -20,17 +20,28 @@
                         Margin="10,10,0,0" />
             </WrapPanel>
 
-            <WrapPanel HorizontalAlignment="Left" Margin="0,10,0,10">
-                <Label Content="Filter mode" />
-                <ComboBox x:Name="Mode" Width="200"></ComboBox>
-            </WrapPanel>
-
             <WrapPanel HorizontalAlignment="Left" Margin="0,10,0,0">
-                <Label Content="Filtered packages" />
-                <TextBox x:Name="PackagePrefixes" Width="465" />
+                <Label Content="Included packages" />
+                <TextBox x:Name="PackageFiltersInclude" Width="450" />
             </WrapPanel>
             <WrapPanel HorizontalAlignment="Center" Margin="0,0,0,10">
                 <TextBlock Text="Comma separated values" FontSize="10" />
+            </WrapPanel>
+            
+            <WrapPanel HorizontalAlignment="Left" Margin="0,10,0,0">
+                <Label Content="Excluded packages" />
+                <TextBox x:Name="PackageFiltersExclude" Width="450" />
+            </WrapPanel>
+            <WrapPanel HorizontalAlignment="Center" Margin="0,0,0,10">
+                <TextBlock Text="Comma separated values" FontSize="10" />
+            </WrapPanel>
+            
+            <WrapPanel HorizontalAlignment="Left" Margin="0,10,0,0">
+                <Label Content="Labels" />
+                <TextBox x:Name="Labels" Width="450" />
+            </WrapPanel>
+            <WrapPanel HorizontalAlignment="Center" Margin="0,0,0,10">
+                <TextBlock Text="Comma separated values. Like: Microsoft.*=⭐ (Emoji as labels recommended)" FontSize="10" />
             </WrapPanel>
 
             <WrapPanel HorizontalAlignment="Left" Margin="0,10,0,0">

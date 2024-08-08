@@ -1,6 +1,4 @@
-﻿using SDV.DependenciesAnalyzer.Interfaces;
-
-namespace SDV.GraphGenerator.Interfaces;
+﻿namespace SDV.GraphGenerator.Interfaces;
 
 public interface IGraphBuilder
 {
@@ -10,14 +8,17 @@ public interface IGraphBuilder
 public class GraphBuilderRequest
 {
     public IEnumerable<string> SlnFilePaths { get; }
-    public string[] PackageFilters { get; init; }
-    public PackageFilterMode Mode { get; init; }
+    public string[] FiltersInclude { get; init; }
+    public string[] FiltersExclude { get; init; }
+    public IReadOnlyDictionary<string, string[]> Labels { get; init; }
     public bool IncludeDependentProjects { get; init; }
     public bool MergeProjects { get; init; }
 
     public GraphBuilderRequest(IEnumerable<string> slnFilePaths)
     {
         SlnFilePaths = slnFilePaths;
-        PackageFilters = Array.Empty<string>();
+        FiltersInclude = [];
+        FiltersExclude = [];
+        Labels = new Dictionary<string, string[]>();
     }
 }
