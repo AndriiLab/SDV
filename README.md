@@ -1,7 +1,7 @@
 # SDV - Solution Dependencies Visualiser
 
 ![MIT License](https://img.shields.io/github/license/AndriiLab/SDV)
-![.NET Core 8.0](https://img.shields.io/badge/.net%20core-8.0-blue)
+![.NET Core 9.0](https://img.shields.io/badge/.net%20core-9.0-blue)
 ![Last Commit](https://img.shields.io/github/last-commit/AndriiLab/SDV)
 ![Last release](https://img.shields.io/github/release-date/AndriiLab/SDV)
 
@@ -36,7 +36,7 @@ But you can also check functional output demo [here](https://andriilab.github.io
 ## Prerequisites
 
 - Windows platform (only supported for now by GUI)
-- [.NET 8](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
+- [.NET 9](https://dotnet.microsoft.com/en-us/download/dotnet/0.0)
 
 ## Installation
 

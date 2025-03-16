@@ -5,15 +5,15 @@ namespace SDV.GraphGenerator.Services.Models;
 
 public class GraphProject
 {
-    public GraphPackage Package { get; init; }
-    public Dictionary<string, GraphEdge> Edges { get; init; } = new();
+    public required GraphPackage Package { get; init; }
+    public Dictionary<string, GraphEdge> Edges { get; } = new();
 }
 
 public class GraphPackage
 {
-    [JsonPropertyName("id")] public string Id { get; init; }
+    [JsonPropertyName("id")] public required string Id { get; init; }
 
-    [JsonPropertyName("label")] public string Label { get; set; }
+    [JsonPropertyName("label")] public required string Label { get; set; }
 
     [JsonPropertyName("type")] public string Type => TypeInternal.HasFlag(DependencyType.Project) ? DependencyType.Project.ToString() : DependencyType.Package.ToString();
         
@@ -25,11 +25,11 @@ public class GraphPackage
 
 public class GraphEdge
 {
-    [JsonPropertyName("from")] public string From { get; init; }
+    [JsonPropertyName("from")] public required string From { get; init; }
 
-    [JsonPropertyName("to")] public string To { get; init; }
+    [JsonPropertyName("to")] public required string To { get; init; }
 
-    [JsonPropertyName("label")] public string Label { get; set; }
+    [JsonPropertyName("label")] public required string Label { get; set; }
     
     [JsonPropertyName("multipleVersions")] public bool HasMultipleVersions { get; set; }
 }
