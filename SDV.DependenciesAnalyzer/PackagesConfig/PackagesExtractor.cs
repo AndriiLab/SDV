@@ -7,21 +7,14 @@ using SDV.DependenciesAnalyzer.Common;
 
 namespace SDV.DependenciesAnalyzer.PackagesConfig;
 
-public class PackagesExtractorBuilder : IExtractorBuilder
+public class PackagesExtractorBuilder(ILogger log) : IExtractorBuilder
 {
-    private readonly ILogger _log;
-
-    public PackagesExtractorBuilder(ILogger log)
-    {
-        _log = log;
-    }
-
     public bool IsCompatible(string projectName, string dependenciesSource)
     {
         const string packagesFileName = "packages.config";
         if (dependenciesSource.EndsWith(packagesFileName))
         {
-            _log.LogInformation("Found {File} file for project: {Project}", dependenciesSource, projectName);
+            log.LogInformation("Found {File} file for project: {Project}", dependenciesSource, projectName);
             return true;
         }
 
@@ -30,7 +23,7 @@ public class PackagesExtractorBuilder : IExtractorBuilder
 
     public IExtractor GetExtractor(string dependenciesSource, string csprojPath, string solutionPath)
     {
-        return PackagesExtractor.NewExtractor(dependenciesSource, csprojPath, solutionPath, _log);
+        return PackagesExtractor.NewExtractor(dependenciesSource, csprojPath, solutionPath, log);
     }
 
     private class PackagesExtractor : IExtractor

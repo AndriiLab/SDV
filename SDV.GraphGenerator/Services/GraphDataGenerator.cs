@@ -6,17 +6,9 @@ using SDV.GraphGenerator.Services.Models;
 
 namespace SDV.GraphGenerator.Services;
 
-public class GraphDataGenerator : IGraphDataGenerator
+public class GraphDataGenerator(ILogger<GraphDataGenerator> log) : IGraphDataGenerator
 {
-    private readonly ILogger<GraphDataGenerator> _log;
-    
-    private (Func<GraphProject, bool> Function, string[] Labels)[] _labels;
-
-    public GraphDataGenerator(ILogger<GraphDataGenerator> log)
-    {
-        _log = log;
-        _labels = [];
-    }
+    private (Func<GraphProject, bool> Function, string[] Labels)[] _labels = [];
 
     public void GenerateGraphDataFromTree(Tree tree,
         IDictionary<string, GraphProject> packages,
@@ -96,7 +88,7 @@ public class GraphDataGenerator : IGraphDataGenerator
                 edge.Label += $" | {dependency.Version}";
                 edge.HasMultipleVersions = true;
                 graphProject.Package.HasMultipleVersions = true;
-                _log.LogWarning("Multiple versions detected for {From} -> {To}: {Versions}",
+                log.LogWarning("Multiple versions detected for {From} -> {To}: {Versions}",
                     parentName, dependency.Id, edge.Label);
             }
 
