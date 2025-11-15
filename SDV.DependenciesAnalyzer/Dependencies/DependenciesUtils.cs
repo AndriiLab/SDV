@@ -4,17 +4,10 @@ using SDV.DependenciesAnalyzer.Models;
 
 namespace SDV.DependenciesAnalyzer.Dependencies;
 
-public class DependenciesUtils
+public class DependenciesUtils(ILogger log)
 {
-    private readonly ILogger _log;
-    private TreeGeneratorConfiguration _configuration;
+    private TreeGeneratorConfiguration _configuration = new(string.Empty, [], []);
 
-    public DependenciesUtils(ILogger log)
-    {
-        _log = log;
-        _configuration = new TreeGeneratorConfiguration(string.Empty, [], []);
-    }
-    
     public DependencyTree[] CreateDependencyTree(IExtractor extractor, TreeGeneratorConfiguration configuration)
     {
         _configuration = configuration;
@@ -35,7 +28,7 @@ public class DependenciesUtils
             }
             else
             {
-                _log.LogWarning("Unexpected dependency found in root dependencies array: {RootId}", rootId);
+                log.LogWarning("Unexpected dependency found in root dependencies array: {RootId}", rootId);
             }
         }
 
@@ -60,7 +53,7 @@ public class DependenciesUtils
             }
             else
             {
-                _log.LogWarning("Unexpected dependency found in children array: {ChildId}", childId);
+                log.LogWarning("Unexpected dependency found in children array: {ChildId}", childId);
             }
         }
     }

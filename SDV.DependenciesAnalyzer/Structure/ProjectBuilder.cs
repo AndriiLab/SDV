@@ -8,22 +8,14 @@ using SDV.DependenciesAnalyzer.PackagesConfig;
 
 namespace SDV.DependenciesAnalyzer.Structure;
 
-public class ProjectBuilder
+public class ProjectBuilder(ILogger log)
 {
-    private readonly ILogger _log;
-    private readonly IExtractorBuilder[] _extractorBuilders;
-    private readonly DependenciesUtils _dependenciesUtils;
-
-    public ProjectBuilder(ILogger log)
-    {
-        _log = log;
-        _dependenciesUtils = new DependenciesUtils(log);
-        _extractorBuilders = new IExtractorBuilder[]
-        {
-            new AssetsExtractorBuilder(log),
-            new PackagesExtractorBuilder(log)
-        };
-    }
+    private readonly IExtractorBuilder[] _extractorBuilders =
+    [
+        new AssetsExtractorBuilder(log),
+        new PackagesExtractorBuilder(log)
+    ];
+    private readonly DependenciesUtils _dependenciesUtils = new(log);
 
     public Project Load(string name, string csprojPath, string dependenciesSource, string solutionPath)
     {
@@ -35,19 +27,18 @@ public class ProjectBuilder
     {
         return project.Extractor is not null
             ? _dependenciesUtils.CreateDependencyTree(project.Extractor, configuration)
-            : Array.Empty<DependencyTree>();
+            : [];
     }
 
     private IExtractor? GetCompatibleExtractor(string projectName, string dependenciesSource, string csprojPath, string solutionPath)
     {
         var builder = _extractorBuilders.FirstOrDefault(e => e.IsCompatible(projectName, dependenciesSource));
-        if (builder is null)
-        {
-            _log.LogWarning("Unsupported project dependencies for project: {ProjectName}", projectName);
-            return null;
-        }
+        if (builder is not null) 
+            return builder.GetExtractor(dependenciesSource, csprojPath, solutionPath);
 
-        return builder.GetExtractor(dependenciesSource, csprojPath, solutionPath);
+        log.LogWarning("Unsupported project dependencies for project: {ProjectName}", projectName);
+        return null;
+
     }
 
     public class Project

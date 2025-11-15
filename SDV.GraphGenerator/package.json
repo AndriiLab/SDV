@@ -1,6 +1,6 @@
 {
   "name": "sdv.app",
   "dependencies": {
-    "vis-network": "^9.1.9"
+    "vis-network": "^10.0.2"
   }
 }

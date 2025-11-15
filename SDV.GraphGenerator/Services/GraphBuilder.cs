@@ -6,21 +6,12 @@ using SDV.GraphGenerator.Services.Models;
 
 namespace SDV.GraphGenerator.Services;
 
-public class GraphBuilder : IGraphBuilder
+public class GraphBuilder(
+    INugetDependenciesGenerator nugetDependenciesGenerator,
+    IGraphDataGenerator graphDataGenerator,
+    ILogger<GraphBuilder> logger)
+    : IGraphBuilder
 {
-    private readonly INugetDependenciesGenerator _nugetDependenciesGenerator;
-    private readonly IGraphDataGenerator _graphDataGenerator;
-    private readonly ILogger<GraphBuilder> _logger;
-
-    public GraphBuilder(INugetDependenciesGenerator nugetDependenciesGenerator,
-        IGraphDataGenerator graphDataGenerator,
-        ILogger<GraphBuilder> logger)
-    {
-        _nugetDependenciesGenerator = nugetDependenciesGenerator;
-        _graphDataGenerator = graphDataGenerator;
-        _logger = logger;
-    }
-
     public string BuildGraphAndGetFilePath(GraphBuilderRequest request)
     {
         var packages = new Dictionary<string, GraphProject>();
@@ -31,29 +22,29 @@ public class GraphBuilder : IGraphBuilder
             IncludeDependentProjects = request is { MergeProjects: false, IncludeDependentProjects: true },
         };
 
-        _graphDataGenerator.SetLabels(request.Labels);
+        graphDataGenerator.SetLabels(request.Labels);
         
         foreach (var slnFilePath in request.SlnFilePaths)
         {
             config.SlnFilePath = slnFilePath;
 
-            _logger.LogInformation("Processing solution {SlnPath}", slnFilePath);
+            logger.LogInformation("Processing solution {SlnPath}", slnFilePath);
 
-            var tree = _nugetDependenciesGenerator.Generate(config);
+            var tree = nugetDependenciesGenerator.Generate(config);
             names.Add(tree.SolutionName);
 
-            _logger.LogInformation("Solution analyzed {SlnName}", tree.SolutionName);
+            logger.LogInformation("Solution analyzed {SlnName}", tree.SolutionName);
 
 
-            _logger.LogInformation("Generating graph data {SlnName}", tree.SolutionName);
+            logger.LogInformation("Generating graph data {SlnName}", tree.SolutionName);
 
-            _graphDataGenerator.GenerateGraphDataFromTree(tree, packages, request.MergeProjects);
+            graphDataGenerator.GenerateGraphDataFromTree(tree, packages, request.MergeProjects);
 
-            _logger.LogInformation("Graph data generation completed for {SlnName}", tree.SolutionName);
+            logger.LogInformation("Graph data generation completed for {SlnName}", tree.SolutionName);
         }
 
         if (request.SlnFilePaths.Count() > 1)
-            _logger.LogInformation("Graph data generation completed for all solutions");
+            logger.LogInformation("Graph data generation completed for all solutions");
 
         var nodes = packages.Values.Select(v => v.Package).ToList();
         var edges = packages.Values.SelectMany(v => v.Edges.Values).ToList();
@@ -94,7 +85,7 @@ public class GraphBuilder : IGraphBuilder
                         writer.WriteLine(JsonSerializer.Serialize(edges));
                         continue;
                     default:
-                        _logger.LogWarning("Unknown placeholder detected in template html file: {Placeholder}",
+                        logger.LogWarning("Unknown placeholder detected in template html file: {Placeholder}",
                             detectedPlaceholder);
                         break;
                 }
@@ -103,7 +94,7 @@ public class GraphBuilder : IGraphBuilder
             writer.WriteLine(line);
         }
 
-        _logger.LogInformation("Result written to file {FileName}", fileName);
+        logger.LogInformation("Result written to file {FileName}", fileName);
 
         return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, fileName);
     }

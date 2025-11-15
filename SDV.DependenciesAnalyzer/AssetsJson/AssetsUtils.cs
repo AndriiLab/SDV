@@ -7,17 +7,10 @@ using SDV.DependenciesAnalyzer.Structure;
 
 namespace SDV.DependenciesAnalyzer.AssetsJson;
 
-public class AssetsUtils
+public class AssetsUtils(ILogger log)
 {
-    private readonly ILogger _log;
-
     private const string AbsentNupkgWarnMsg = 
         "Skipping adding this dependency to the dependency tree. This might be because the package already exists in a different NuGet cache, possibly the SDK's NuGetFallbackFolder cache. Removing the package from this cache may resolve the issue.";
-
-    public AssetsUtils(ILogger log)
-    {
-        _log = log;
-    }
 
     public List<string> GetDirectDependencies(ProjectAssetsJsonModel assets)
     {
@@ -67,7 +60,7 @@ public class AssetsUtils
             {
                 if (IsPackagePartOfTargetDependencies(assets, libraryPath))
                 {
-                    _log.LogWarning(
+                    log.LogWarning(
                         "The file {File} doesn't exist in the NuGet cache directory but it does exist as a target in the assets files. {WarnMessage}",
                         nupkgFilePath, AbsentNupkgWarnMsg);
                     continue;
