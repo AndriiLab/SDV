@@ -2,14 +2,8 @@
 
 namespace SDV.DependenciesAnalyzer.Structure;
 
-public class Dependency : IDependencyDetails
+public class Dependency(string id, string version) : IDependencyDetails
 {
-    public Dependency(string id, string version)
-    {
-        Id = id;
-        Version = version;
-    }
-    
-    public string Id { get; }
-    public string Version { get; }
+    public string Id { get; } = id;
+    public string Version { get; } = version;
 }

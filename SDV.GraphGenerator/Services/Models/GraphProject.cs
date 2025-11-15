@@ -15,7 +15,7 @@ public class GraphPackage
 
     [JsonPropertyName("label")] public required string Label { get; set; }
 
-    [JsonPropertyName("type")] public string Type => TypeInternal.HasFlag(DependencyType.Project) ? DependencyType.Project.ToString() : DependencyType.Package.ToString();
+    [JsonPropertyName("type")] public string Type => TypeInternal.HasFlag(DependencyType.Project) ? nameof(DependencyType.Project) : nameof(DependencyType.Package);
         
     [JsonPropertyName("multipleVersions")] public bool HasMultipleVersions { get; set; }
     
