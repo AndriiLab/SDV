@@ -6,22 +6,12 @@ using SDV.DependenciesAnalyzer.Common;
 
 namespace SDV.DependenciesAnalyzer.Structure;
 
-public class SolutionBuilder
+public partial class SolutionBuilder(ILogger logger, ProjectBuilder projectBuilder)
 {
-    private readonly ILogger _logger;
-    private readonly ProjectBuilder _projectBuilder;
     private const string PackagesFileName = "packages.config";
     private const string AssetsFileName = "project.assets.json";
-    private List<string> _dependenciesSources;
-    private TreeGeneratorConfiguration _configuration;
-
-    public SolutionBuilder(ILogger logger, ProjectBuilder projectBuilder)
-    {
-        _logger = logger;
-        _projectBuilder = projectBuilder;
-        _configuration = new TreeGeneratorConfiguration(string.Empty, [], []);
-        _dependenciesSources = new List<string>();
-    }
+    private List<string> _dependenciesSources = [];
+    private TreeGeneratorConfiguration _configuration = new(string.Empty, [], []);
 
     public Solution CreateSolutionFile(TreeGeneratorConfiguration configuration)
     {
@@ -56,11 +46,11 @@ public class SolutionBuilder
                 return [];
             }
             var pb = LoadProject(parsed.ProjectName, parsed.CsprojPath);
-            return pb != null ? new[] { pb } : Enumerable.Empty<ProjectBuilder.Project>(); 
+            return pb != null ? [pb] : []; 
         }
         catch (Exception ex) 
         {
-            _logger.LogError(ex, "Failed parsing and loading project '{ProjectName}' from solution '{SolutionName}': {Error}", project, _configuration.SlnFilePath, ex.Message);
+            logger.LogError(ex, "Failed parsing and loading project '{ProjectName}' from solution '{SolutionName}': {Error}", project, _configuration.SlnFilePath, ex.Message);
             return [];
         }
     }
@@ -71,7 +61,7 @@ public class SolutionBuilder
         var dirName = Path.GetDirectoryName(_configuration.SlnFilePath);
         if (dirName is null)
         {
-            _logger.LogError("Directory name not found for provided path {Path}", _configuration.SlnFilePath);
+            logger.LogError("Directory name not found for provided path {Path}", _configuration.SlnFilePath);
             return curDependenciesSources;
         }
         
@@ -80,7 +70,7 @@ public class SolutionBuilder
             if (path.EndsWith(PackagesFileName) || path.EndsWith(AssetsFileName))
             {
                 curDependenciesSources.Add(Path.GetFullPath(path));
-                _logger.LogInformation("Found: {SlnFile}", path);
+                logger.LogInformation("Found: {SlnFile}", path);
             }
         }
         curDependenciesSources.Sort((a, b) => a.Length.CompareTo(b.Length));
@@ -93,7 +83,7 @@ public class SolutionBuilder
     {
         if (!path.EndsWith(".csproj"))
         {
-            _logger.LogWarning("Skipping a project '{ProjectName}', since it doesn't have a csproj file path", name);
+            logger.LogWarning("Skipping a project '{ProjectName}', since it doesn't have a csproj file path", name);
             return false;
         }
 
@@ -116,7 +106,7 @@ public class SolutionBuilder
                 yield return project;
             }
         }
-        _logger.LogWarning("Expected only one undeclared project in solution dir. Found: {Count}", csprojFiles.Count);
+        logger.LogWarning("Expected only one undeclared project in solution dir. Found: {Count}", csprojFiles.Count);
     }
 
     private ProjectBuilder.Project? LoadProject(string projectName, string csprojPath)
@@ -129,10 +119,10 @@ public class SolutionBuilder
 
         if (string.IsNullOrEmpty(dependenciesSource))
         {
-            _logger.LogWarning("Project dependencies were not found for project: {ProjectName}", projectName);
+            logger.LogWarning("Project dependencies were not found for project: {ProjectName}", projectName);
         }
 
-        var proj = _projectBuilder.Load(projectName, csprojPath, dependenciesSource, _configuration.SlnFilePath);
+        var proj = projectBuilder.Load(projectName, csprojPath, dependenciesSource, _configuration.SlnFilePath);
         if (proj.Extractor != null)
         {
             return proj;
@@ -170,7 +160,7 @@ public class SolutionBuilder
     {
         var projects = new List<string>();
         var content = File.ReadAllText(filePath);
-        foreach (Match match in Regex.Matches(content, "Project\\(\"(.*)(\\r\\n|\\r|\\n)EndProject"))
+        foreach (Match match in IsProjectRegex().Matches(content))
         {
             projects.Add(match.Value);
         }
@@ -188,4 +178,7 @@ public class SolutionBuilder
             Projects = projects;
         }
     }
+
+    [GeneratedRegex("Project\\(\"(.*)(\\r\\n|\\r|\\n)EndProject")]
+    private static partial Regex IsProjectRegex();
 }
