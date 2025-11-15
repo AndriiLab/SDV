@@ -1,14 +1,8 @@
 ﻿namespace SDV.DependenciesAnalyzer.Models;
 
-public class Project
+public class Project(string name, DependencyTree[] dependencies)
 {
-    public Project(string name, DependencyTree[] dependencies)
-    {
-        Name = name;
-        Dependencies = dependencies;
-    }
+    public string Name { get; } = name;
 
-    public string Name { get; }
-
-    public DependencyTree[] Dependencies { get; }
+    public DependencyTree[] Dependencies { get; } = dependencies;
 }
