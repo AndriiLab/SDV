@@ -8,20 +8,13 @@ using SDV.DependenciesAnalyzer.Common;
 
 namespace SDV.DependenciesAnalyzer.AssetsJson;
 
-public class AssetsExtractorBuilder : IExtractorBuilder
+public class AssetsExtractorBuilder(ILogger log) : IExtractorBuilder
 {
-    private readonly ILogger _log;
-
-    public AssetsExtractorBuilder(ILogger log)
-    {
-        _log = log;
-    }
-    
     public bool IsCompatible(string projectName, string dependenciesSource)
     {
         if (dependenciesSource.EndsWith("project.assets.json"))
         {
-            _log.LogInformation("Found {File} file for project: {Project}", dependenciesSource, projectName);
+            log.LogInformation("Found {File} file for project: {Project}", dependenciesSource, projectName);
             return true;
         }
 
@@ -30,7 +23,7 @@ public class AssetsExtractorBuilder : IExtractorBuilder
 
     public IExtractor GetExtractor(string dependenciesSource, string csprojPath, string solutionPath)
     {
-        return AssetsExtractor.NewExtractor(dependenciesSource, _log);
+        return AssetsExtractor.NewExtractor(dependenciesSource, log);
     }
 
     private class AssetsExtractor : IExtractor
