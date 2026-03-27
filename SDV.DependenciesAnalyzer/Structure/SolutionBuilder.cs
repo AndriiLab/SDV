@@ -74,8 +74,7 @@ public partial class SolutionBuilder(ILogger logger, ProjectBuilder projectBuild
             }
         }
         curDependenciesSources.Sort((a, b) => a.Length.CompareTo(b.Length));
-        curDependenciesSources.AddRange(curDependenciesSources);
-        
+
         return curDependenciesSources;
     }
 
@@ -106,7 +105,10 @@ public partial class SolutionBuilder(ILogger logger, ProjectBuilder projectBuild
                 yield return project;
             }
         }
-        logger.LogWarning("Expected only one undeclared project in solution dir. Found: {Count}", csprojFiles.Count);
+        else
+        {
+            logger.LogWarning("Expected only one undeclared project in solution dir. Found: {Count}", csprojFiles.Count);
+        }
     }
 
     private ProjectBuilder.Project? LoadProject(string projectName, string csprojPath)

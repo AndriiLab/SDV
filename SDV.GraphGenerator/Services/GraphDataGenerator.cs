@@ -31,7 +31,7 @@ public class GraphDataGenerator(ILogger<GraphDataGenerator> log) : IGraphDataGen
                 packages[projectName] = graphProject;
             }
 
-            graphProject.Package.TypeInternal &= DependencyType.Project;
+            graphProject.Package.TypeInternal |= DependencyType.Project;
 
             GenerateDependencies(projectName, project.Dependencies, packages, singleSolutionMode);
         }
@@ -70,7 +70,7 @@ public class GraphDataGenerator(ILogger<GraphDataGenerator> log) : IGraphDataGen
                 packages[dependency.Id] = graphProject;
             }
             
-            graphProject.Package.TypeInternal &= dependency.Type;
+            graphProject.Package.TypeInternal |= dependency.Type;
 
 
             if (!graphProject.Edges.TryGetValue(parentName, out var edge))

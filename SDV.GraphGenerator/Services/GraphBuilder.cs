@@ -12,6 +12,9 @@ public class GraphBuilder(
     ILogger<GraphBuilder> logger)
     : IGraphBuilder
 {
+    private static readonly string TemplateDir =
+        Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "template");
+
     public string BuildGraphAndGetFilePath(GraphBuilderRequest request)
     {
         var packages = new Dictionary<string, GraphProject>();
@@ -23,7 +26,8 @@ public class GraphBuilder(
         };
 
         graphDataGenerator.SetLabels(request.Labels);
-        
+
+        var processedSlns = 0;
         foreach (var slnFilePath in request.SlnFilePaths)
         {
             config.SlnFilePath = slnFilePath;
@@ -35,15 +39,15 @@ public class GraphBuilder(
 
             logger.LogInformation("Solution analyzed {SlnName}", tree.SolutionName);
 
-
             logger.LogInformation("Generating graph data {SlnName}", tree.SolutionName);
 
             graphDataGenerator.GenerateGraphDataFromTree(tree, packages, request.MergeProjects);
 
             logger.LogInformation("Graph data generation completed for {SlnName}", tree.SolutionName);
+            processedSlns++;
         }
 
-        if (request.SlnFilePaths.Count() > 1)
+        if (processedSlns > 1)
             logger.LogInformation("Graph data generation completed for all solutions");
 
         var nodes = packages.Values.Select(v => v.Package).ToList();
@@ -60,7 +64,7 @@ public class GraphBuilder(
         const string edgesPlaceholder = "Edges";
         const string visNetworkScriptPlaceholder = "VisNetworkScript";
         var fileName = $"{string.Join('_', names)}.html";
-        using var rs = new FileStream("template\\output.html", FileMode.Open);
+        using var rs = new FileStream(Path.Combine(TemplateDir, "output.html"), FileMode.Open);
         using var ws = new FileStream(fileName, FileMode.Create);
         using var reader = new StreamReader(rs);
         using var writer = new StreamWriter(ws);
@@ -101,7 +105,7 @@ public class GraphBuilder(
 
     private static void WriteVisNetworkScript(TextWriter writer)
     {
-        using var rs = new FileStream(  "template\\vis-network.js", FileMode.Open);
+        using var rs = new FileStream(Path.Combine(TemplateDir, "vis-network.js"), FileMode.Open);
         using var reader = new StreamReader(rs);
         while (reader.ReadLine() is { } line)
         {

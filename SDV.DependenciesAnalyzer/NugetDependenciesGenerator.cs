@@ -49,6 +49,9 @@ public class NugetDependenciesGenerator : INugetDependenciesGenerator
 
     private static void ValidateFilePath(string slnFilePath)
     {
+        if (!File.Exists(slnFilePath))
+            throw new NugetDepsTreeException($"Provided path does not exist: {slnFilePath}");
+
         var attr = File.GetAttributes(slnFilePath);
         if ((attr & FileAttributes.Directory) == FileAttributes.Directory)
             throw new NugetDepsTreeException("Provided path is a directory. Please include path to .sln file");
