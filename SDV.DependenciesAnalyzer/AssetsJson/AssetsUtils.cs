@@ -14,7 +14,7 @@ public class AssetsUtils(ILogger log)
 
     public List<string> GetDirectDependencies(ProjectAssetsJsonModel assets)
     {
-        var frameworks = assets.Project.Frameworks;
+        var frameworks = assets.Project?.Frameworks;
         if (frameworks is null)
         {
             return [];
@@ -29,16 +29,20 @@ public class AssetsUtils(ILogger log)
 
     public CaseInsensitiveMap<IDependencyDetails> GetAllDependencies(ProjectAssetsJsonModel assets)
     {
-        var path = assets.Project.Restore?.ProjectPath;
+        var path = assets.Project?.Restore?.ProjectPath;
         if (string.IsNullOrEmpty(path))
         {
             throw new NugetDepsTreeException("Packages path is missing");
         }
 
         path = CommonUtils.GetProjectDirectoryName(path);
-        
+
         var dependencies = new CaseInsensitiveMap<IDependencyDetails>();
         var libraries = assets.Libraries;
+        if (libraries is null)
+        {
+            return dependencies;
+        }
         foreach (var (name, library) in libraries)
         {
             var type = library.Type ?? string.Empty;
@@ -80,6 +84,10 @@ public class AssetsUtils(ILogger log)
     {
         var dependenciesRelations = new CaseInsensitiveMap<List<string>>();
         var targets = assets.Targets;
+        if (targets is null)
+        {
+            return dependenciesRelations;
+        }
         foreach (var (_, targetValue) in targets)
         {
             foreach (var (dependencyKey, dependencyValue) in targetValue)
@@ -116,6 +124,10 @@ public class AssetsUtils(ILogger log)
     private static bool IsPackagePartOfTargetDependencies(ProjectAssetsJsonModel assets, string nugetPackageName)
     {
         var targets = assets.Targets;
+        if (targets is null)
+        {
+            return false;
+        }
         foreach (var (_, targetValue) in targets)
         {
             foreach (var (dependencyKey, _) in targetValue)
@@ -150,7 +162,7 @@ public class AssetsUtils(ILogger log)
 
     public List<Dependency> GetDependentProjects(ProjectAssetsJsonModel assets)
     {
-        return assets.Libraries
+        return (assets.Libraries ?? [])
             .Where(kv => kv.Value.Type == "project")
             .Select(kv => GetDependency(kv.Key))
             .ToList();

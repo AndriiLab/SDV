@@ -20,7 +20,7 @@ public static class FilterHelper
             {
                 if(split.First() != string.Empty && split.Last() != string.Empty) // fil*ter
                 {
-                    return s => s.StartsWith(split.First()) && packagePrefix.EndsWith(split.Last());
+                    return s => s.StartsWith(split.First()) && s.EndsWith(split.Last());
 
                 }
                 if (split.First() == string.Empty && split.Last() == string.Empty) // *
