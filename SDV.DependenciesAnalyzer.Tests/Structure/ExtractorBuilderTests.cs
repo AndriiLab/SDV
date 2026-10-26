@@ -99,16 +99,19 @@ public sealed class ExtractorBuilderTests : IDisposable
         Assert.Equal(("A", "2.0.0"), (dependency.Id, dependency.Version));
     }
 
-    [Fact(Skip = "Known bug: CreateAlternativeVersionForms pads 1- and 2-part versions to only 3 parts, then string.Join(.., 0, 4) throws ArgumentOutOfRangeException")]
-    public void PackagesExtractor_TwoPartVersion_ResolvesNupkgWithPaddedVersion()
+    [Theory]
+    [InlineData("2", "2.0.0")]
+    [InlineData("2.0", "2.0.0")]
+    [InlineData("2.0", "2.0.0.0")]
+    public void PackagesExtractor_ShortVersion_ResolvesNupkgWithPaddedVersion(string version, string nupkgVersion)
     {
-        var (packagesConfig, csproj, sln) = WriteLegacyProject(("A", "2.0"));
-        WriteNupkg("A", "2.0.0");
+        var (packagesConfig, csproj, sln) = WriteLegacyProject(("A", version));
+        WriteNupkg("A", nupkgVersion);
 
         var extractor = new PackagesExtractorBuilder(_logger).GetExtractor(packagesConfig, csproj, sln);
 
         var dependency = Assert.Single(extractor.AllDependencies().Values);
-        Assert.Equal(("A", "2.0"), (dependency.Id, dependency.Version));
+        Assert.Equal(("A", version), (dependency.Id, dependency.Version));
     }
 
     [Fact]

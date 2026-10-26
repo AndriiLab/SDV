@@ -106,7 +106,7 @@ public class GraphDataGeneratorTests
         Assert.False(_graph["Serilog"].Package.HasMultipleVersions);
     }
 
-    [Fact(Skip = "Known bug: GraphDataGenerator checks edge.Label.Contains(version), so '1.0' is treated as already present in '11.0'")]
+    [Fact]
     public void GenerateGraphDataFromTree_VersionIsSubstringOfExistingVersion_FlagsConflict()
     {
         var tree = Tree("Shop",
@@ -249,7 +249,7 @@ public class GraphDataGeneratorTests
             _sut.SetLabels(new Dictionary<string, string[]> { ["*"] = ["📦"] }));
     }
 
-    [Fact(Skip = "Known bug: labels are re-applied to every node of the shared graph on each solution, duplicating them in multi-solution mode")]
+    [Fact]
     public void SetLabels_MultipleSolutions_AppliesLabelOncePerNode()
     {
         _sut.SetLabels(new Dictionary<string, string[]> { ["IsNuget"] = ["📦"] });
@@ -259,6 +259,18 @@ public class GraphDataGeneratorTests
 
         Assert.Equal("Serilog📦", _graph["Serilog"].Package.Label);
         Assert.Equal("Newtonsoft.Json📦", _graph["Newtonsoft.Json"].Package.Label);
+    }
+
+    [Fact]
+    public void SetLabels_NodeTypeChangesInLaterSolution_LabelsReflectMergedType()
+    {
+        _sut.SetLabels(new Dictionary<string, string[]> { ["IsNuget"] = ["📦"], ["IsProject"] = ["🏠"] });
+
+        _sut.GenerateGraphDataFromTree(Tree("Shop", Project("Web", Package("Lib", "1.0.0"))), _graph, false);
+        _sut.GenerateGraphDataFromTree(Tree("Library", Project("Lib")), _graph, false);
+
+        Assert.Equal("Lib📦🏠", _graph["Lib"].Package.Label);
+        Assert.Equal("Web🏠", _graph["Web"].Package.Label);
     }
 
     private void AssertNode(string id, string expectedType)
