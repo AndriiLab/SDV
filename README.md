@@ -55,13 +55,20 @@ from [releases](https://github.com/AndriiLab/SDV/releases) and execute
 ```
 
 3. Build and run project `SDV.App`
+4. Run the tests (step 2 is required for them as well)
+
+```powershell
+  dotnet test --solution SDV.sln
+```
 
 ## Hints
 
 - Restore and build examined solution to get output from this tool
-- Use exclusion mode with `Microsoft.` and `System.` packages filtered for most
+- Use exclusion mode with `Microsoft.*, System.*` packages filtered for most
   cases (otherwise you'll be overcrowded with dependencies)
 - Use inclusion mode with specified package prefixes for very large projects
+- Filters are comma-separated and case-insensitive; each one supports a single `*` wildcard:
+  `Foo` (exact), `Foo*` (prefix), `*Foo` (suffix), `Fo*o` (starts and ends with), `*Foo*` (contains)
 
 ## Contributing
 

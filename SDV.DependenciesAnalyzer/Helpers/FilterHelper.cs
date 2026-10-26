@@ -3,6 +3,8 @@
 public static class FilterHelper
 {
     private const char Mask = '*';
+    // package ids are case-insensitive in NuGet
+    private const StringComparison Comparison = StringComparison.OrdinalIgnoreCase;
 
     public static Func<string, bool>? BuildFilter(string packagePrefix)
     {
@@ -15,12 +17,12 @@ public static class FilterHelper
         {
             // filter
             case 1:
-                return s => split[0].Equals(s);
+                return s => split[0].Equals(s, Comparison);
             case 2:
             {
                 if(split.First() != string.Empty && split.Last() != string.Empty) // fil*ter
                 {
-                    return s => s.StartsWith(split.First()) && s.EndsWith(split.Last());
+                    return s => s.StartsWith(split.First(), Comparison) && s.EndsWith(split.Last(), Comparison);
 
                 }
                 if (split.First() == string.Empty && split.Last() == string.Empty) // *
@@ -29,14 +31,14 @@ public static class FilterHelper
                 }
                 if (split.First() == string.Empty) // *filter
                 {
-                    return s => s.EndsWith(split.Last());
+                    return s => s.EndsWith(split.Last(), Comparison);
                 }
                 // filter*
-                return s => s.StartsWith(split.First());
-                
+                return s => s.StartsWith(split.First(), Comparison);
+
             }
-            case 3 when split.First() == string.Empty && split.Last() == string.Empty:
-                return s => s.Contains(split[1]);
+            case 3 when split.First() == string.Empty && split.Last() == string.Empty && split[1] != string.Empty: // *filter*
+                return s => s.Contains(split[1], Comparison);
             default:
                 throw new ArgumentException($"Unknown filter specified: {packagePrefix}");
         }

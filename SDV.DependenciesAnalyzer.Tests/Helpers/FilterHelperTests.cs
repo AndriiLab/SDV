@@ -52,18 +52,22 @@ public class FilterHelperTests
     }
 
     [Theory]
-    [InlineData("Microsoft.*", "microsoft.extensions")]
     [InlineData("Newtonsoft.Json", "newtonsoft.json")]
-    public void BuildFilter_DifferentCase_DoesNotMatch(string pattern, string name)
+    [InlineData("Microsoft.*", "microsoft.extensions")]
+    [InlineData("*.abstractions", "Microsoft.Extensions.Logging.Abstractions")]
+    [InlineData("SERILOG*CONSOLE", "Serilog.Sinks.Console")]
+    [InlineData("*logging*", "Microsoft.Extensions.Logging")]
+    public void BuildFilter_DifferentCase_Matches(string pattern, string name)
     {
         var filter = FilterHelper.BuildFilter(pattern);
 
         Assert.NotNull(filter);
-        Assert.False(filter(name));
+        Assert.True(filter(name));
     }
 
     [Theory]
     [InlineData("*")]
+    [InlineData("**")]
     [InlineData("a*b*c")]
     [InlineData("*a*b")]
     [InlineData("a*b*")]
