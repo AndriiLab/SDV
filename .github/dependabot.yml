@@ -12,3 +12,9 @@ updates:
     directory: "/SDV.GraphGenerator"
     schedule:
       interval: "weekly"
+
+  # Maintain versions of the actions used in .github/workflows
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"

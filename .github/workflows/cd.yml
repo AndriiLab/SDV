@@ -1,0 +1,138 @@
+name: CD
+
+# Manual release: run from the Actions tab on main once CI has passed for its head commit.
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: cd
+  cancel-in-progress: false
+
+# contents: write pushes the tag and creates the release; actions: read looks up the CI runs.
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      SERVER: ${{ github.server_url }}
+    steps:
+      # Full history and tags, for the tag check and the changelog since the previous release.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
+
+      # The build copies node_modules/vis-network/dist/vis-network.min.js to the output as template/vis-network.js.
+      - name: Install npm packages
+        working-directory: SDV.GraphGenerator
+        run: npm ci
+
+      # All three production projects carry the same <Version>; refuse to release if they drifted apart.
+      - name: Read version
+        id: version
+        run: |
+          version=$(dotnet msbuild SDV.App -getProperty:Version)
+          if [ -z "$version" ]; then
+            echo "::error::Could not read the version from SDV.App.csproj"
+            exit 1
+          fi
+          for project in SDV.GraphGenerator SDV.DependenciesAnalyzer; do
+            other=$(dotnet msbuild "$project" -getProperty:Version)
+            if [ "$other" != "$version" ]; then
+              echo "::error::$project has version $other, SDV.App has $version; bump them together"
+              exit 1
+            fi
+          done
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+
+      # The CI run's conclusion is success only when the tests and CodeQL all passed.
+      - name: Require successful CI for this commit
+        run: |
+          count=$(gh api "repos/$REPO/actions/workflows/ci.yml/runs?head_sha=$GITHUB_SHA&status=success" --jq .total_count)
+          if [ "$count" -eq 0 ]; then
+            echo "::error::No successful CI run for $GITHUB_SHA; wait for CI to pass before releasing"
+            exit 1
+          fi
+
+      - name: Stop if the release already exists
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          if gh release view "$TAG" --repo "$REPO" > /dev/null 2>&1; then
+            echo "::error::Release $TAG already exists; bump the version in the .csproj files"
+            exit 1
+          fi
+
+      # Self-contained, so no .NET install is needed to run it. template/ is published next to the binary,
+      # where GraphBuilder reads it from. zip keeps the executable bit for the linux and osx builds.
+      - name: Build release zips
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          for rid in win-x64 linux-x64 osx-arm64; do
+            dotnet publish SDV.App -c Release -r "$rid" --self-contained -o "publish/$rid"
+            (cd "publish/$rid" && zip -qr "../../SDV-$VERSION-$rid.zip" .)
+          done
+
+      - name: Push tag
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" > /dev/null; then
+            tagged=$(git rev-parse "$TAG^{commit}")
+            if [ "$tagged" != "$GITHUB_SHA" ]; then
+              echo "::error::Tag $TAG already points to $tagged, not $GITHUB_SHA"
+              exit 1
+            fi
+            echo "::notice::Tag $TAG already exists on this commit, skipping"
+          else
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git tag -a "$TAG" -m "SDV $VERSION"
+            git push origin "$TAG"
+          fi
+
+      # Commit subjects since the previous release tag (merges dropped), each linked to its commit.
+      - name: Write release notes
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          prev=$(git describe --tags --abbrev=0 --match 'v[0-9]*' --exclude "$TAG" HEAD 2>/dev/null || true)
+          range=${prev:+$prev..}HEAD
+          {
+            echo '## Changes'
+            echo
+            git log --no-merges --reverse --format="- %s ([%h]($SERVER/$REPO/commit/%H))" "$range"
+            if [ -n "$prev" ]; then
+              echo
+              echo "**Full changelog**: $SERVER/$REPO/compare/$prev...$TAG"
+            fi
+          } > release-notes.md
+          cat release-notes.md
+
+      - name: Publish release
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          gh release create "$TAG" SDV-"$VERSION"-*.zip \
+            --repo "$REPO" \
+            --title "SDV $VERSION" \
+            --notes-file release-notes.md \
+            --verify-tag
