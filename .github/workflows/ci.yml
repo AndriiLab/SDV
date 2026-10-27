@@ -1,0 +1,116 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# checks/pull-requests: write lets the report steps create a check run and comment on PRs.
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+          cache: true
+          cache-dependency-path: '**/*.csproj'
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: SDV.GraphGenerator/package-lock.json
+
+      # The build copies node_modules/vis-network/dist/vis-network.min.js to the output as template/vis-network.js.
+      - name: Install npm packages
+        working-directory: SDV.GraphGenerator
+        run: npm ci
+
+      # global.json opts dotnet test into Microsoft.Testing.Platform; --report-xunit-trx comes with xunit.v3,
+      # --coverage with Microsoft.Testing.Extensions.CodeCoverage. Both write one file per test project.
+      - name: Test
+        run: >-
+          dotnet test --solution SDV.sln -c Release
+          --results-directory TestResults
+          --report-xunit-trx
+          --coverage --coverage-output-format cobertura
+
+      # Tests run/passed/failed/skipped in the job summary, a "Test Results" check and a PR comment.
+      - name: Publish test results
+        if: ${{ !cancelled() }}
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          files: TestResults/**/*.trx
+
+      # Merges the per-project Cobertura files into one report, without the test assemblies themselves.
+      - name: Build coverage report
+        if: ${{ !cancelled() }}
+        uses: danielpalme/ReportGenerator-GitHub-Action@v5
+        with:
+          reports: TestResults/**/*.cobertura.xml
+          targetdir: coverage
+          reporttypes: Html;MarkdownSummaryGithub
+          assemblyfilters: -*.Tests
+          title: Code Coverage
+
+      - name: Publish coverage to job summary
+        if: ${{ !cancelled() && hashFiles('coverage/SummaryGithub.md') != '' }}
+        run: cat coverage/SummaryGithub.md >> "$GITHUB_STEP_SUMMARY"
+
+      # PRs from forks get a read-only token, so the comment is only attempted for branches of this repo.
+      - name: Publish coverage to PR
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && hashFiles('coverage/SummaryGithub.md') != '' }}
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: coverage
+          path: coverage/SummaryGithub.md
+
+      - name: Upload test and coverage reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: reports
+          path: |
+            TestResults
+            coverage
+          if-no-files-found: ignore
+
+  # Replaces CodeQL default setup (which must be disabled in the repo settings, or uploads are rejected).
+  # build-mode none extracts the sources without a dotnet build, so it doesn't need the npm install.
+  # It only starts when the tests passed.
+  codeql:
+    needs: tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ csharp, actions ]
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+
+      - uses: github/codeql-action/analyze@v4
+        with:
+          category: /language:${{ matrix.language }}

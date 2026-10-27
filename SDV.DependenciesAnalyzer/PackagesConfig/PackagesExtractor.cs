@@ -235,10 +235,12 @@ public class PackagesExtractorBuilder(ILogger log) : IExtractorBuilder
         {
             var versionsSlice = originalVersion.Split('.');
 
-            for (int i = 4; i > versionsSlice.Length; i--)
+            // pad to 4 parts with zeros, e.g. 2.0 -> 2.0.0.0
+            if (versionsSlice.Length < 4)
             {
-                Array.Resize(ref versionsSlice, versionsSlice.Length + 1);
-                versionsSlice[^1] = "0";
+                var originalLength = versionsSlice.Length;
+                Array.Resize(ref versionsSlice, 4);
+                Array.Fill(versionsSlice, "0", originalLength, 4 - originalLength);
             }
 
             var alternativeVersions = new List<string>();

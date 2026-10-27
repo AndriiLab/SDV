@@ -100,7 +100,7 @@ public class GraphBuilder(
 
         logger.LogInformation("Result written to file {FileName}", fileName);
 
-        return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, fileName);
+        return Path.GetFullPath(fileName);
     }
 
     private static void WriteVisNetworkScript(TextWriter writer)

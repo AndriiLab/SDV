@@ -1,14 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Media;
-using System.Windows.Threading;
+using Avalonia.Controls;
+using Avalonia.Interactivity;
+using Avalonia.Media;
+using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 using Microsoft.Extensions.Logging;
-using Microsoft.Win32;
 using SDV.App.Logging;
 using Serilog.Events;
 using SDV.GraphGenerator.Interfaces;
@@ -16,13 +16,19 @@ using SDV.GraphGenerator.Interfaces;
 namespace SDV.App
 {
     /// <summary>
-    /// Interaction logic for MainWindow.xaml
+    /// Interaction logic for MainWindow.axaml
     /// </summary>
-    public partial class MainWindow
+    public partial class MainWindow : Window
     {
+        private static readonly FilePickerOpenOptions SlnPickerOptions = new()
+        {
+            Title = "Select Sln file",
+            AllowMultiple = true,
+            FileTypeFilter = [new FilePickerFileType("Solution files") { Patterns = ["*.sln"] }]
+        };
+
         private readonly ILogger<MainWindow> _logger;
         private readonly IGraphBuilder _builder;
-        private readonly OpenFileDialog _openFileDialog;
         private HashSet<string> _slnFilePaths;
 
         public MainWindow(ILogger<MainWindow> logger, WindowLogSink logSink, IGraphBuilder builder)
@@ -31,37 +37,43 @@ namespace SDV.App
             _builder = builder;
             InitializeComponent();
             _slnFilePaths = new HashSet<string>();
-            _openFileDialog = new OpenFileDialog
-            {
-                Filter = "solution files (*.sln)|*.sln"
-            };
             PackageFiltersExclude.Text = "Microsoft.*, System.*";
             IncludeDependentProjects.IsChecked = true;
             ClearSelectionButton.IsEnabled = false;
-            Labels.Text = "IsNuget=\ud83d\udce6";
+            Labels.Text = "IsNuget=📦";
             logSink.OnLogEmitted = OnLogEmitted;
         }
 
-        private void btnOpenFile_Click(object sender, RoutedEventArgs e)
+        private async void btnOpenFile_Click(object? sender, RoutedEventArgs e)
         {
             ToggleControlsAs(false);
 
-            if (_openFileDialog.ShowDialog() == true)
+            try
             {
-                _logger.LogInformation("Selected {File}", _openFileDialog.FileName);
-                _slnFilePaths.Add(_openFileDialog.FileName);
-                ClearSelectionButton.IsEnabled = true;
-            }
+                var files = await StorageProvider.OpenFilePickerAsync(SlnPickerOptions);
+                foreach (var path in files.Select(f => f.TryGetLocalPath()).OfType<string>())
+                {
+                    _logger.LogInformation("Selected {File}", path);
+                    _slnFilePaths.Add(path);
+                    ClearSelectionButton.IsEnabled = true;
+                }
 
-            if (_slnFilePaths.Count > 1)
+                if (_slnFilePaths.Count > 1)
+                {
+                    _logger.LogInformation("Total solutions selected: {Number}", _slnFilePaths.Count);
+                }
+            }
+            catch (Exception ex)
             {
-                _logger.LogInformation("Total solutions selected: {Number}", _slnFilePaths.Count);
+                _logger.LogError(ex, "Failed to select sln file");
             }
-
-            ToggleControlsAs(true);
+            finally
+            {
+                ToggleControlsAs(true);
+            }
         }
 
-        private async void btnBuild_Click(object sender, RoutedEventArgs e)
+        private async void btnBuild_Click(object? sender, RoutedEventArgs e)
         {
             if (_slnFilePaths.Count < 1 || !_slnFilePaths.All(p => p.EndsWith(".sln")))
             {
@@ -89,7 +101,7 @@ namespace SDV.App
 
                 var path = await BuildGraphAndGetFilePathAsync(request);
 
-                OpenUrl(path);
+                await OpenFileAsync(path);
             }
             catch (Exception ex)
             {
@@ -102,15 +114,15 @@ namespace SDV.App
             }
         }
 
-        private static IEnumerable<string> GetCommaSeparatedValues(string str)
+        private static IEnumerable<string> GetCommaSeparatedValues(string? str)
         {
-            return str.Split(",").Select(t => t.Trim()).Where(t => !string.IsNullOrEmpty(t));
+            return (str ?? string.Empty).Split(",").Select(t => t.Trim()).Where(t => !string.IsNullOrEmpty(t));
         }
 
         private Task<string> BuildGraphAndGetFilePathAsync(GraphBuilderRequest graphBuilderRequest) =>
             Task.Run(() => _builder.BuildGraphAndGetFilePath(graphBuilderRequest));
 
-        private void btnClearSelection_Click(object sender, RoutedEventArgs e)
+        private void btnClearSelection_Click(object? sender, RoutedEventArgs e)
         {
             _slnFilePaths = [];
             Log.Text = string.Empty;
@@ -118,31 +130,11 @@ namespace SDV.App
             ClearSelectionButton.IsEnabled = false;
         }
 
-        private static void OpenUrl(string url)
+        private async Task OpenFileAsync(string path)
         {
-            try
+            if (!await Launcher.LaunchFileInfoAsync(new FileInfo(path)))
             {
-                Process.Start(url);
-            }
-            catch
-            {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    url = url.Replace("&", "^&");
-                    Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
-                }
-                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                {
-                    Process.Start("xdg-open", url);
-                }
-                else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                {
-                    Process.Start("open", url);
-                }
-                else
-                {
-                    throw;
-                }
+                _logger.LogWarning("Unable to open {File} automatically, please open it manually", path);
             }
         }
 
@@ -159,15 +151,15 @@ namespace SDV.App
 
         private void OnLogEmitted(LogEventLevel level, string log)
         {
-            Log.Dispatcher.Invoke(DispatcherPriority.Background, () =>
+            Dispatcher.UIThread.Post(() =>
             {
                 Log.Foreground = GetBrushForLevel(level);
-                Log.AppendText(log);
-                Log.ScrollToEnd();
-            });
+                Log.Text += log;
+                Log.CaretIndex = Log.Text.Length;
+            }, DispatcherPriority.Background);
         }
 
-        private static SolidColorBrush GetBrushForLevel(LogEventLevel level)
+        private static IBrush GetBrushForLevel(LogEventLevel level)
         {
             return level switch
             {

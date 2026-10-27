@@ -7,3 +7,7 @@ riderModule.iml
 **/node_modules/
 SDV.sln.DotSettings.user
 .vs
+CLAUDE.md
+
+# test results / coverage
+TestResults/

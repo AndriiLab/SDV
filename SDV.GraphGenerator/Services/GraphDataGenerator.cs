@@ -8,6 +8,7 @@ namespace SDV.GraphGenerator.Services;
 
 public class GraphDataGenerator(ILogger<GraphDataGenerator> log) : IGraphDataGenerator
 {
+    private const string VersionSeparator = " | ";
     private (Func<GraphProject, bool> Function, string[] Labels)[] _labels = [];
 
     public void GenerateGraphDataFromTree(Tree tree,
@@ -36,11 +37,12 @@ public class GraphDataGenerator(ILogger<GraphDataGenerator> log) : IGraphDataGen
             GenerateDependencies(projectName, project.Dependencies, packages, singleSolutionMode);
         }
         
+        // the dictionary is shared across solutions, so labels are recomputed from the id
+        // (rather than appended) to stay idempotent and reflect node types merged so far
         foreach (var node in packages.Values)
         {
-            var labelsToApply = _labels.Where(l => l.Function(node)).SelectMany(l => l.Labels).ToArray();
-            if (labelsToApply.Length != 0)
-                node.Package.Label += string.Join("", labelsToApply);
+            var labelsToApply = _labels.Where(l => l.Function(node)).SelectMany(l => l.Labels);
+            node.Package.Label = node.Package.Id + string.Join("", labelsToApply);
         }
     }
 
@@ -83,9 +85,9 @@ public class GraphDataGenerator(ILogger<GraphDataGenerator> log) : IGraphDataGen
                 };
                 graphProject.Edges[parentName] = edge;
             }
-            else if (!edge.Label.Contains(dependency.Version))
+            else if (!edge.Label.Split(VersionSeparator).Contains(dependency.Version))
             {
-                edge.Label += $" | {dependency.Version}";
+                edge.Label += $"{VersionSeparator}{dependency.Version}";
                 edge.HasMultipleVersions = true;
                 graphProject.Package.HasMultipleVersions = true;
                 log.LogWarning("Multiple versions detected for {From} -> {To}: {Versions}",
@@ -121,7 +123,7 @@ public class GraphDataGenerator(ILogger<GraphDataGenerator> log) : IGraphDataGen
 
         var func = FilterHelper.BuildFilter(filter);
         return func != null 
-            ? new Func<GraphProject, bool>(x => func(x.Package.Label))
+            ? new Func<GraphProject, bool>(x => func(x.Package.Id))
             : null;
     }
 }

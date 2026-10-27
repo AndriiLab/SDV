@@ -1,4 +1,6 @@
-﻿using System.Windows;
+﻿using Avalonia;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using SDV.App.Logging;
@@ -10,7 +12,7 @@ using SDV.GraphGenerator.Services;
 
 namespace SDV.App
 {
-    public partial class App
+    public partial class App : Application
     {
         private readonly IHost _appHost;
         private readonly WindowLogSink _logEventSink;
@@ -21,28 +23,33 @@ namespace SDV.App
             Log.Logger = new LoggerConfiguration()
                 .WriteTo.Sink(_logEventSink)
                 .CreateLogger();
-            
+
             _appHost = Host.CreateDefaultBuilder()
                 .ConfigureServices(ConfigureServices)
                 .Build();
         }
 
-        protected override async void OnStartup(StartupEventArgs e)
+        public override void Initialize()
         {
-            await _appHost.StartAsync();
-
-            var mainWindow = _appHost.Services.GetRequiredService<MainWindow>();
-            mainWindow.Show();
-
-            base.OnStartup(e);
+            AvaloniaXamlLoader.Load(this);
         }
 
-        protected override async void OnExit(ExitEventArgs e)
+        public override void OnFrameworkInitializationCompleted()
         {
-            Log.Debug("Exiting application");
-            await _appHost.StopAsync();
-            await Log.CloseAndFlushAsync();
-            base.OnExit(e);
+            _appHost.Start();
+
+            if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            {
+                desktop.MainWindow = _appHost.Services.GetRequiredService<MainWindow>();
+                desktop.Exit += (_, _) =>
+                {
+                    Log.Debug("Exiting application");
+                    _appHost.StopAsync().GetAwaiter().GetResult();
+                    Log.CloseAndFlush();
+                };
+            }
+
+            base.OnFrameworkInitializationCompleted();
         }
 
         private void ConfigureServices(HostBuilderContext hostBuilderContext,
