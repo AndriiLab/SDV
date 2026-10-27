@@ -47,6 +47,16 @@ public sealed class GraphBuilderTests : IDisposable
     }
 
     [Fact]
+    public void BuildGraphAndGetFilePath_ReturnsAbsolutePathOfWrittenFileInCurrentDirectory()
+    {
+        Build(new GraphBuilderRequest([SlnPath(_slnA)]), out var resultPath);
+
+        Assert.True(Path.IsPathRooted(resultPath));
+        Assert.True(File.Exists(resultPath));
+        Assert.Equal(Path.GetFullPath($"{_slnA}.html"), resultPath);
+    }
+
+    [Fact]
     public void BuildGraphAndGetFilePath_Template_SubstitutesNodesAndEdgesAsJson()
     {
         var lines = Build(new GraphBuilderRequest([SlnPath(_slnA)]), out _);
@@ -162,10 +172,8 @@ public sealed class GraphBuilderTests : IDisposable
 
         resultPath = sut.BuildGraphAndGetFilePath(request);
 
-        // GraphBuilder writes to the current directory but reports a path under the base directory
-        var writtenPath = Path.GetFullPath(Path.GetFileName(resultPath));
-        _generatedFiles.Add(writtenPath);
-        return File.ReadAllLines(writtenPath);
+        _generatedFiles.Add(Path.GetFullPath(Path.GetFileName(resultPath)));
+        return File.ReadAllLines(resultPath);
     }
 
     private static string LineAfter(string[] lines, string marker)

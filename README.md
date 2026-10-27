@@ -35,8 +35,9 @@ But you can also check functional output demo [here](https://andriilab.github.io
 
 ## Prerequisites
 
-- Windows platform (only supported for now by GUI)
+- Windows, Linux or macOS (the GUI is built with [Avalonia](https://avaloniaui.net/))
 - [.NET 10](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)
+- On Linux: an X11/Wayland desktop session; `xdg-open` is used to open the generated html
 
 ## Installation
 
@@ -54,7 +55,12 @@ from [releases](https://github.com/AndriiLab/SDV/releases) and execute
   npm install
 ```
 
-3. Build and run project `SDV.App`
+3. Build and run project `SDV.App`, or publish it for your platform:
+
+```powershell
+  dotnet publish SDV.App -c Release -r linux-x64 --self-contained   # or win-x64, osx-arm64
+```
+
 4. Run the tests (step 2 is required for them as well)
 
 ```powershell

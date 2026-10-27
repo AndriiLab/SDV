@@ -1,0 +1,56 @@
+﻿<Window x:Class="SDV.App.MainWindow"
+        xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Configure dependencies analysis"
+        Width="600"
+        Height="600">
+    <DockPanel Margin="10">
+        <StackPanel DockPanel.Dock="Top">
+            <WrapPanel HorizontalAlignment="Center" Margin="0,0,0,10">
+                <Button x:Name="SlnFileSelectorButton"
+                        Width="190"
+                        Click="btnOpenFile_Click"
+                        Content="Select Sln file"
+                        Margin="10,10,0,0" />
+
+                <Button x:Name="ClearSelectionButton"
+                        Width="190"
+                        Click="btnClearSelection_Click"
+                        Content="Clear selected solutions"
+                        Margin="10,10,0,0" />
+            </WrapPanel>
+
+            <Label Content="Included packages" />
+            <TextBox x:Name="PackageFiltersInclude" />
+            <TextBlock Text="Comma separated values" FontSize="10" HorizontalAlignment="Center" Margin="0,2,0,10" />
+
+            <Label Content="Excluded packages" />
+            <TextBox x:Name="PackageFiltersExclude" />
+            <TextBlock Text="Comma separated values" FontSize="10" HorizontalAlignment="Center" Margin="0,2,0,10" />
+
+            <Label Content="Labels" />
+            <TextBox x:Name="Labels" />
+            <TextBlock Text="Comma separated values. Like: Microsoft.*=⭐ (Emoji as labels recommended)" FontSize="10"
+                       HorizontalAlignment="Center" Margin="0,2,0,10" />
+
+            <CheckBox x:Name="IncludeDependentProjects" Content="Include dependencies between projects" />
+            <CheckBox x:Name="MergeProjects" Content="Merge projects (Display only solution entry)" />
+
+            <WrapPanel HorizontalAlignment="Center" Margin="0,10,0,0">
+                <Button x:Name="BuildGraphButton"
+                        Content="Build graph"
+                        Width="120"
+                        HorizontalContentAlignment="Center"
+                        Click="btnBuild_Click" />
+            </WrapPanel>
+
+            <Label Content="Log" />
+        </StackPanel>
+
+        <TextBox x:Name="Log"
+                 IsReadOnly="True"
+                 AcceptsReturn="True"
+                 TextWrapping="Wrap"
+                 MinHeight="120" />
+    </DockPanel>
+</Window>
